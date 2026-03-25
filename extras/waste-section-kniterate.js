@@ -22,7 +22,7 @@ let wasteCarrier, drawCarrier, castonCarrier;
 let castonStyle;
 
 let minN, maxN, wasteMin, wasteMax;
-let width, wastePasses = 70;
+let width, wastePasses = 71;
 let carriers = [], inCarriers = [];
 
 // Create a promise based version of rl.question so we can use it in async functions
@@ -301,6 +301,8 @@ const steps = {
 		// waste section
 		wasteSection.push(`;waste yarn section`);
 		for (let p = 0; p < wastePasses; ++p) {
+
+			// even numbered rows in +ve direction
 			if (p % 2 === 0) {
 				for (let n = wasteMin; n <= wasteMax; ++n) {
 					if (n % 2 === 0) {
@@ -309,7 +311,10 @@ const steps = {
 						wasteSection.push(`knit + b${n} ${wasteCarrier}`);
 					}
 				}
-			} else {
+			} 
+
+			// odd numbered rows in -ve direction
+			else {
 				for (let n = wasteMax; n >= wasteMin; --n) {
 					if (n % 2 === 0) {
 						wasteSection.push(`knit - b${n} ${wasteCarrier}`);
@@ -320,7 +325,43 @@ const steps = {
 			}
 		}
 
-		for (let p = 0; p < 12; ++p) {
+
+		// bring in the drawthread
+		for (let n = wasteMax; n >= wasteMin; --n) {
+			if (n % 2 === 0) {
+				wasteSection.push(`knit - b${n} ${castonCarrier}`);
+			} else {
+				wasteSection.push(`knit - f${n} ${castonCarrier}`);
+			}
+		}
+
+		// 5 rows of alternating front/back
+		// nb -- rev direction after drawthread intro
+		for (let p = 0; p < 5; ++p) {
+			if (p % 2 === 1) {
+				for (let n = wasteMin; n <= wasteMax; ++n) {
+					wasteSection.push(`knit + f${n} ${wasteCarrier}`);
+				}
+			} else {
+				for (let n = wasteMax; n >= wasteMin; --n) {
+					wasteSection.push(`knit - b${n} ${wasteCarrier}`);
+				}
+			}
+		}
+
+		// bring in the cast on thread
+		for (let n = wasteMax; n >= wasteMin; --n) {
+			if (n % 2 === 0) {
+				wasteSection.push(`knit - b${n} ${drawCarrier}`);
+			} else {
+				wasteSection.push(`knit - f${n} ${drawCarrier}`);
+			}
+		}
+
+
+		// 2 rows of alternating front/back
+		// nb-- needs to be -ve direction after
+		for (let p = 0; p < 2; ++p) {
 			if (p % 2 === 0) {
 				for (let n = wasteMin; n <= wasteMax; ++n) {
 					wasteSection.push(`knit + f${n} ${wasteCarrier}`);
@@ -331,6 +372,8 @@ const steps = {
 				}
 			}
 		}
+
+
 		if (wasteDir === '+') {
 			for (let n = wasteMin; n <= wasteMax; ++n) {
 				wasteSection.push(`knit + f${n} ${wasteCarrier}`);
@@ -358,7 +401,7 @@ const steps = {
 
 		// draw thread
 		wasteSection.push(`;draw thread`);
-		if (drawDir === '+') {
+		if (drawDir === '-') {
 			for (let n = minN; n <= maxN; ++n) {
 				wasteSection.push(`knit + f${n} ${drawCarrier}`);
 			}
@@ -367,6 +410,8 @@ const steps = {
 				wasteSection.push(`knit - f${n} ${drawCarrier}`);
 			}
 		}
+
+
 		if (!inCarriers.includes(drawCarrier) && drawCarrier !== castonCarrier) {
 			if (drawDir === '-') wasteSection.push(`out ${drawCarrier}`); //*
 			else {
@@ -375,10 +420,11 @@ const steps = {
 			}
 		}
 
+		//tube style cast on
 		if (castonStyle !== 0) {
 			wasteSection.push(`;cast-on`);
 			if (castonStyle === 1) {
-				wasteSection.push('rack 0.25'); // or 0.5 ? (visualizer)
+				wasteSection.push('rack 0.5'); // or 0.5 ? (visualizer)
 				if (castonDir === '+') {
 					for (let n = minN; n <= maxN; ++n) {
 						wasteSection.push(`knit + f${n} ${castonCarrier}`, `knit + b${n} ${castonCarrier}`);
@@ -390,7 +436,17 @@ const steps = {
 				}
 				wasteSection.push(`rack 0`);
 			} else {
-				console.warn('//TODO: add support for other cast-on styles.');
+				wasteSection.push('rack 0.5'); // or 0.5 ? (visualizer)
+				if (castonDir === '-') { // ??
+					for (let n = minN; n <= maxN; ++n) {
+						wasteSection.push(`knit + f${n} ${castonCarrier}`, `knit + b${n} ${castonCarrier}`);
+					}
+				} else {
+					for (let n = maxN; n >= minN; --n) {
+						wasteSection.push(`knit - f${n} ${castonCarrier}`, `knit - b${n} ${castonCarrier}`);
+					}
+				}
+				wasteSection.push(`rack 0`);
 			}
 			if (!inCarriers.includes(castonCarrier)) {
 				if (castonDir === '-') wasteSection.push(`out ${castonCarrier}`); //*
@@ -413,7 +469,7 @@ const steps = {
 	},
 	writeFile: async () => {
 		outFile = await question(`Filename for output knitout: `);
-		fs.writeFileSync(outFile, lines);
+		fs.writeFileSync("waste-tests/" + outFile, lines);
 		return steps.end();
 	},
 	end: async () => {
